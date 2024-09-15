@@ -1,5 +1,5 @@
 task_flag="dit_g2_full_1024p_relight"                         # the task flag is used to identify folders.
-resume_module_root=/home/zhaoyi/media/vllm_ckpt/HunyuanDiT/t2i/model/pytorch_model_module.pt # checkpoint root for model resume
+resume_module_root=/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/model/pytorch_model_module.pt # checkpoint root for model resume
 index_file="/home/zhaoyi/media/dataset/ffhq/1024relighted/ffhq_relight/jsons/ffhq_relighted.json"                                             # index file for dataloader
 results_dir=./log_EXP                                         # save root for results
 batch_size=1                                                  # training batch size
@@ -33,7 +33,6 @@ sh $(dirname "$0")/run_g_relight.sh \
     --results-dir ${results_dir} \
     --resume \
     --resume-module-root ${resume_module_root} \
-    --resume-ema-root ${resume_ema_root} \
     --epochs ${epochs} \
     --ckpt-every ${ckpt_every} \
     --ckpt-latest-every ${ckpt_latest_every} \
@@ -42,6 +41,7 @@ sh $(dirname "$0")/run_g_relight.sh \
     --deepspeed \
     --use-zero-stage 2 \
     --gradient-checkpointing \
-    --cpu-offloading \
+    --use-style-cond \
+    --size-cond 1024 1024 \
     --relight_mode  ${relight_mode} \
     "$@"

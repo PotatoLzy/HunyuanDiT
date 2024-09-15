@@ -79,7 +79,7 @@ def get_args(default_args=None):
 
     # Basic Setting
     parser.add_argument("--prompt", type=str, default="一只小猫", help="The prompt for generating images.")
-    parser.add_argument("--model-root", type=str, default="ckpts",
+    parser.add_argument("--model-root", type=str, default="/home/zhaoyi/media/vllm_ckpt/HunyuanDiT",
                         help="Root path of all the models, including t2i model and dialoggen model.")
     parser.add_argument("--dit-weight", type=str, default=None,
                         help="Path to the HunYuan-DiT model. If None, search the model in the args.model_root."

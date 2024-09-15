@@ -27,11 +27,11 @@ TRT_MAX_HEIGHT = 1280
 # Constants about models
 # =======================================================
 
-VAE_EMA_PATH = "ckpts/t2i/sdxl-vae-fp16-fix"
-TOKENIZER = "ckpts/t2i/tokenizer"
-TEXT_ENCODER = 'ckpts/t2i/clip_text_encoder'
+VAE_EMA_PATH = "/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/sdxl-vae-fp16-fix"
+TOKENIZER = "/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/tokenizer"
+TEXT_ENCODER = '/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/clip_text_encoder'
 T5_ENCODER = {
-    'MT5': 'ckpts/t2i/mt5',
+    'MT5': '/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/mt5',
     'attention_mask': True,
     'layer_index': -1,
     'attention_pool': True,

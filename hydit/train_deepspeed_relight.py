@@ -382,15 +382,26 @@ def main(args):
     
     # @modify: model input modify
     with torch.no_grad():
-        if args.relight_mode == "fg":
-            new_embedder_proj = torch.nn.Conv2d(8, model.x_embedder.proj.out_channels, model.x_embedder.proj.kernel_size, model.x_embedder.proj.stride)
-        elif args.relight_mode == "bg":
-            new_embedder_proj = torch.nn.Conv2d(12, model.x_embedder.proj.out_channels, model.x_embedder.proj.kernel_size, model.x_embedder.proj.stride)
+        if args.use_fp16:
+            if args.relight_mode == "fg":
+                new_embedder_proj = torch.nn.Conv2d(8, model.module.x_embedder.proj.out_channels, model.module.x_embedder.proj.kernel_size, model.module.x_embedder.proj.stride)
+            elif args.relight_mode == "bg":
+                new_embedder_proj = torch.nn.Conv2d(12, model.module.x_embedder.proj.out_channels, model.module.x_embedder.proj.kernel_size, model.module.x_embedder.proj.stride)
+            else:
+                raise NotImplementedError("reilght_mode {} is not implemented.".format(args.relight_mode))
+            new_embedder_proj.weight[:, :4, :, :].copy_(model.module.x_embedder.proj.weight)
+            new_embedder_proj.bias = model.module.x_embedder.proj.bias
+            model.module.x_embedder.proj = new_embedder_proj
         else:
-            raise NotImplementedError("reilght_mode {} is not implemented.".format(args.relight_mode))
-        new_embedder_proj.weight[:, :4, :, :].copy_(model.x_embedder.proj.weight)
-        new_embedder_proj.bias = model.x_embedder.proj.bias
-        model.x_embedder.proj = new_embedder_proj
+            if args.relight_mode == "fg":
+                new_embedder_proj = torch.nn.Conv2d(8, model.x_embedder.proj.out_channels, model.x_embedder.proj.kernel_size, model.x_embedder.proj.stride)
+            elif args.relight_mode == "bg":
+                new_embedder_proj = torch.nn.Conv2d(12, model.x_embedder.proj.out_channels, model.x_embedder.proj.kernel_size, model.x_embedder.proj.stride)
+            else:
+                raise NotImplementedError("reilght_mode {} is not implemented.".format(args.relight_mode))
+            new_embedder_proj.weight[:, :4, :, :].copy_(model.x_embedder.proj.weight)
+            new_embedder_proj.bias = model.x_embedder.proj.bias
+            model.x_embedder.proj = new_embedder_proj
     # modify end
     if args.training_parts == "lora":
         loraconfig = LoraConfig(

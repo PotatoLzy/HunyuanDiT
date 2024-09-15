@@ -1,0 +1,27 @@
+[[34m2024-09-15 23:48:39[0m] Experiment directory created at ./log_EXP/003-dit_g2_full_1024p_relight
+[[34m2024-09-15 23:48:39[0m] ['hydit/train_deepspeed_relight.py', '--local_rank=0', '--qk-norm', '--model', 'DiT-g/2', '--rope-img', 'base512', '--rope-real', '--task-flag', 'dit_g2_full_1024p_relight', '--noise-schedule', 'scaled_linear', '--beta-start', '0.00085', '--beta-end', '0.018', '--predict-type', 'v_prediction', '--uncond-p', '0', '--uncond-p-t5', '0', '--index-file', '/home/zhaoyi/media/dataset/ffhq/1024relighted/ffhq_relight/jsons/ffhq_relighted.json', '--random-flip', '--lr', '0.0001', '--batch-size', '1', '--image-size', '1536', '--global-seed', '999', '--grad-accu-steps', '1', '--warmup-num-steps', '0', '--use-flash-attn', '--use-fp16', '--extra-fp16', '--results-dir', './log_EXP', '--resume', '--resume-module-root', '/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/model/pytorch_model_module.pt', '--epochs', '8', '--ckpt-every', '9999999', '--ckpt-latest-every', '9999999', '--ckpt-every-n-epoch', '2', '--log-every', '10', '--deepspeed', '--use-zero-stage', '2', '--gradient-checkpointing', '--use-style-cond', '--size-cond', '1024', '1024', '--relight_mode', 'fg', '--index-file', '/home/zhaoyi/media/dataset/ffhq/1024relighted/ffhq_relight/jsons/ffhq_relighted.json']
+[[34m2024-09-15 23:48:39[0m] Namespace(batch_size=1, beta_end=0.018, beta_start=0.00085, cfg_scale=6.0, ckpt_every=9999999, ckpt_every_n_epoch=2, ckpt_latest_every=9999999, condition_image_path=None, control_type='canny', control_weight='1.0', controlnet_weight=None, cpu_offloading=False, deepscale=False, deepscale_config=None, deepspeed=True, deepspeed_config=None, deepspeed_mpi=False, deepspeed_optimizer=False, dit_weight=None, ema_decay=None, ema_dtype='none', ema_reset_decay=False, ema_warmup=False, ema_warmup_power=None, enhance=True, epochs=8, extra_fp16=True, gc_interval=40, global_seed=999, grad_accu_steps=1, gradient_checkpointing=True, image_size=[1536], index_file=['/home/zhaoyi/media/dataset/ffhq/1024relighted/ffhq_relight/jsons/ffhq_relighted.json'], infer_mode='fa', infer_steps=100, lang='zh', learn_sigma=True, load_4bit=False, load_key='ema', local_rank=0, log_every=10, lora_ckpt=None, lr=0.0001, max_training_steps=10000000, merge_src_cond=False, model='DiT-g/2', model_root='/home/zhaoyi/media/vllm_ckpt/HunyuanDiT', model_var_type=None, mse_loss_weight_type='constant', multireso=False, negative=None, noise_offset=0.0, noise_schedule='scaled_linear', norm='layer', num_workers=4, onnx_workdir='onnx_model', output_merge_path=None, predict_type='v_prediction', prompt='一只小猫', qk_norm=True, random_flip=True, random_shrink_size_cond=False, rank=64, relight_mode='fg', remote_device='none', reset_loader=False, reso_step=None, results_dir='./log_EXP', resume=True, resume_ema_root=None, resume_module_root='/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/model/pytorch_model_module.pt', rope_img='base512', rope_real=True, sampler='ddpm', save_optimizer_state=False, seed=42, sigma_small=False, size_cond=[1024, 1024], strict=True, target_modules=['Wqkv', 'q_proj', 'kv_proj', 'out_proj'], target_ratios=None, task_flag='dit_g2_full_1024p_relight', text_len=77, text_len_t5=256, text_states_dim=1024, text_states_dim_t5=2048, training_parts='all', uncond_p=0.0, uncond_p_t5=0.0, use_ema=False, use_flash_attn=True, use_fp16=True, use_style_cond=True, use_zero_stage=2, warmup_min_lr=1e-06, warmup_num_steps=0.0, weight_decay=0, zero_stage=1)
+[[34m2024-09-15 23:48:39[0m] Building HYDIT Model.
+[[34m2024-09-15 23:48:39[0m]     Enable Flash Attention.
+[[34m2024-09-15 23:48:40[0m]     Number of tokens: 9216
+[[34m2024-09-15 23:48:54[0m]     Using image RoPE (base512) (real): [(0, 0), (32, 32), (96, 96)] | (1536x1536) torch.Size([9216, 88])
+[[34m2024-09-15 23:48:55[0m]     Using main model with data type fp16
+[[34m2024-09-15 23:48:55[0m]     Loading vae from /home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/sdxl-vae-fp16-fix
+[[34m2024-09-15 23:48:56[0m]     Loading Bert text encoder from /home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/clip_text_encoder
+[[34m2024-09-15 23:48:58[0m]     Loading Bert tokenizer from /home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/tokenizer
+[[34m2024-09-15 23:49:15[0m]     Using fp16 for extra modules: vae, text_encoder
+[[34m2024-09-15 23:49:17[0m]     Optimizer parameters: lr=0.0001, weight_decay=0
+[[34m2024-09-15 23:49:17[0m]     Using deepspeed optimizer
+[[34m2024-09-15 23:49:17[0m] Building Streaming Dataset.
+[[34m2024-09-15 23:49:17[0m]     Loading index file ['/home/zhaoyi/media/dataset/ffhq/1024relighted/ffhq_relight/jsons/ffhq_relighted.json'] (v2)
+[[34m2024-09-15 23:49:17[0m]     arrow_load_stream | Using ArrowIndexV2: 2,022
+[[34m2024-09-15 23:49:17[0m]     arrow_load_stream | Enable image_meta_size condition (original_size, target_size, crop_coords)
+[[34m2024-09-15 23:49:17[0m]     arrow_load_stream | Image_transforms: Compose(
+    RandomHorizontalFlip(p=0.5)
+    ToTensor()
+    Normalize(mean=[0.5], std=[0.5])
+)
+[[34m2024-09-15 23:49:17[0m]     Dataset contains 2,022 images.
+[[34m2024-09-15 23:49:17[0m]     Index file: ['/home/zhaoyi/media/dataset/ffhq/1024relighted/ffhq_relight/jsons/ffhq_relighted.json'].
+[[34m2024-09-15 23:49:17[0m] Loading parameter
+[[34m2024-09-15 23:49:17[0m]     Resume from checkpoint /home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.1/t2i/model/pytorch_model_module.pt
