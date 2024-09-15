@@ -208,6 +208,9 @@ def get_args(default_args=None):
     parser.add_argument("--cpu-offloading", action="store_true", help="Use cpu offloading for parameters and optimizer states.")
     parser.add_argument("--save-optimizer-state", action="store_true", help="Save optimizer state in the checkpoint.")
 
+    # Task
+    parser.add_argument("--relight_mode", type=str, default=None, choices=[None, "fg", "bg"], help="Train relighting model. None is original setting.")
+     
     # ========================================================================================================
     # Deepspeed config
     # ========================================================================================================

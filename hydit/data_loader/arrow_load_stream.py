@@ -253,3 +253,50 @@ class TextImageArrowStream(Dataset):
 
     def __len__(self):
         return len(self.index_manager)
+
+class RelightingArrowStream(TextImageArrowStream):
+    def __getitem__(self, ind):
+        # Get text
+        if random.random() < self.uncond_p:
+            description = ""
+        else:
+            description = self.get_text(ind)
+
+        # Get text for t5
+        if random.random() < self.uncond_p_t5:
+            description_t5 = ""
+        else:
+            description_t5 = self.get_text(ind)
+
+        original_pil_image, kwargs = self.get_image_with_hwxy(ind)
+
+        # add foreground / background
+        fg_pil_image, _ = self.get_image_with_hwxy(ind, image_key="fg")
+
+        if args.relight_type == "bg":
+            bg_pil_image, _ = self.get_image_with_hwxy(ind, image_key="bg")
+        
+
+        # Use encoder to embed tokens online
+        text, text_embedding, text_embedding_mask = self.get_text_info_with_encoder(description)
+
+        text_t5, text_embedding_t5, text_embedding_mask_t5 = self.get_text_info_with_encoder_t5(description_t5)
+        
+        if args.relight_type == "bg":
+            return (
+                [original_pil_image, fg_pil_image, bg_pil_image], 
+                text_embedding.clone().detach(),
+                text_embedding_mask.clone().detach(),
+                text_embedding_t5.clone().detach(),
+                text_embedding_mask_t5.clone().detach(),
+                {k: torch.tensor(np.array(v)).clone().detach() for k, v in kwargs.items()},
+            )
+        else:
+            return (
+                [original_pil_image, fg_pil_image,],
+                text_embedding.clone().detach(),
+                text_embedding_mask.clone().detach(),
+                text_embedding_t5.clone().detach(),
+                text_embedding_mask_t5.clone().detach(),
+                {k: torch.tensor(np.array(v)).clone().detach() for k, v in kwargs.items()},
+            )
