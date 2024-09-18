@@ -271,10 +271,10 @@ class RelightingArrowStream(TextImageArrowStream):
         original_pil_image, kwargs = self.get_image_with_hwxy(ind)
 
         # add foreground / background
-        fg_pil_image, _ = self.get_image_with_hwxy(ind, image_key="fg")
+        fg_pil_image, _ = self.get_image_with_hwxy(ind, image_key="fg_image")
 
         if self.args.relight_mode == "bg":
-            bg_pil_image, _ = self.get_image_with_hwxy(ind, image_key="bg")
+            bg_pil_image, _ = self.get_image_with_hwxy(ind, image_key="bg_image")
         
 
         # Use encoder to embed tokens online
