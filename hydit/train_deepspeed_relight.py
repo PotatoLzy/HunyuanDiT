@@ -144,20 +144,19 @@ def prepare_model_inputs(args, batch, device, vae, text_encoder, text_encoder_t5
     else:
         style = None
 
-    if args.extra_fp16:
-        image = image.half()
-
-    # Map input images to latent space + normalize latents:
-    image = image.to(device)
-    vae_scaling_factor = vae.config.scaling_factor
-    
-    # modify:
-    latents_list = nn.ModuleList()
+    latents_list = []
     for img in image:
+        if args.extra_fp16:
+            img = img.half()
+
+        # Map input images to latent space + normalize latents:
+        img = img.to(device)
+        vae_scaling_factor = vae.config.scaling_factor
+
         latents = vae.encode(img).latent_dist.sample().mul_(vae_scaling_factor)
         latents_list.append(latents)
     
-    latents = torch.cat([latents_list], dim=1)
+    latents = torch.cat(latents_list, dim=1)
     # modify end
 
     # positional embedding
@@ -297,6 +296,7 @@ def main(args):
         beta_start=args.beta_start,
         beta_end=args.beta_end,
         noise_offset=args.noise_offset,
+        relight_mode=args.relight_mode,
     )
 
     # Setup VAE
@@ -323,6 +323,16 @@ def main(args):
         vae = vae.to(device)
         text_encoder = text_encoder.to(device)
         text_encoder_t5 = text_encoder_t5.to(device)
+
+    vae.eval()
+    for param in vae.parameters():
+        param.requires_grad = False 
+    text_encoder.eval()
+    for param in text_encoder.parameters():
+        param.requires_grad = False 
+    text_encoder_t5.eval()
+    for param in text_encoder_t5.parameters():
+        param.requires_grad = False 
 
     logger.info(f"    Optimizer parameters: lr={args.lr}, weight_decay={args.weight_decay}")
     logger.info("    Using deepspeed optimizer")

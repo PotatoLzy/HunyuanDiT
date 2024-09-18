@@ -17,6 +17,7 @@ def create_diffusion(
     beta_start=0.0001,
     beta_end=0.02,
     noise_offset=0.0,
+    relight_mode=None,
 ):
     betas = gd.get_named_beta_schedule(noise_schedule, steps, beta_start, beta_end)
     if use_kl:
@@ -29,8 +30,10 @@ def create_diffusion(
         timestep_respacing = [steps]
     mean_type = gd.predict_type_dict[predict_type]
 
+
     return SpacedDiffusion(
         use_timesteps=space_timesteps(steps, timestep_respacing),
+        relight_mode=relight_mode,
         betas=betas,
         model_mean_type=mean_type,
         model_var_type=(

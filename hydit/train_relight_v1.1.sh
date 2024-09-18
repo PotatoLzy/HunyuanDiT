@@ -43,5 +43,5 @@ sh $(dirname "$0")/run_g_relight.sh \
     --gradient-checkpointing \
     --use-style-cond \
     --size-cond 1024 1024 \
-    --relight_mode  ${relight_mode} \
+    --relight_mode ${relight_mode} \
     "$@"

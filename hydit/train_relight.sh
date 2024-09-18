@@ -1,6 +1,6 @@
 task_flag="dit_g2_full_1024p_relight"                         # the task flag is used to identify folders.
-resume_module_root=/home/zhaoyi/media/vllm_ckpt/HunyuanDiT/t2i/model/pytorch_model_module.pt # checkpoint root for model resume
-resume_ema_root=/home/zhaoyi/media/vllm_ckpt/HunyuanDiT/t2i/model/pytorch_model_ema.pt        # checkpoint root for ema resume
+resume_module_root=/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.2/t2i/model/pytorch_model_module.pt # checkpoint root for model resume
+resume_ema_root=/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.2/t2i/model/pytorch_model_ema.pt        # checkpoint root for ema resume
 index_file="/home/zhaoyi/media/dataset/ffhq/1024relighted/ffhq_relight/jsons/ffhq_relighted.json"                                             # index file for dataloader
 results_dir=./log_EXP                                         # save root for results
 batch_size=1                                                  # training batch size

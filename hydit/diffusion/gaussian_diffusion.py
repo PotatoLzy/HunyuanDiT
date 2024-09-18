@@ -1339,6 +1339,278 @@ class GaussianDiffusion:
         pred_xstart = process_xstart(pred_xstart)
         return {"sample": sample, "pred_xstart": pred_xstart, "eps": eps}
 
+class GaussianDiffusionForRelight(GaussianDiffusion):
+
+    def training_losses(self, model, x_start, model_kwargs=None, controlnet=None, noise=None):
+        """
+        Compute training losses for a single timestep.
+
+        :param model: the model to evaluate loss on.
+        :param x_start: the [N x C x ...] tensor of inputs.
+        :param model_kwargs: if not None, a dict of extra keyword arguments to
+            pass to the model. This can be used for conditioning.
+        :param noise: if specified, the specific Gaussian noise to try to remove.
+        :return: a dict with the key "loss" containing a tensor of shape [N].
+                 Some mean or variance settings may also have other keys.
+        """
+        if model_kwargs is None:
+            model_kwargs = {}
+        # Time steps
+        t = th.randint(0, self.num_timesteps, (x_start.shape[0],), device=x_start.device)
+        # Noise
+        # only add noise to x_cond, fg add zeros
+        # x_start : [B x C x H x W] C=8
+        if noise is None:
+            noise = th.randn_like(x_start)
+            noise_zero = th.zeros_like(x_start[:, 4:, :, :])
+            noise[:, 4:, :, :] = noise_zero
+
+        if self.noise_offset > 0:
+            # Add channel wise noise offset
+            # https://www.crosslabs.org/blog/diffusion-with-offset-noise
+            noise[:, :4, :, :] = noise[:, :4, :, :] + self.noise_offset * th.randn(*x_start.shape[:2], 1, 1, device=x_start.device)
+        x_t = self.q_sample(x_start, t, noise=noise)
+
+        terms = {}
+
+        if self.mse_loss_weight_type == 'constant':
+            mse_loss_weight = th.ones_like(t)
+        elif self.mse_loss_weight_type.startswith("min_snr_"):
+            alpha = _extract_into_tensor(self.sqrt_alphas_cumprod, t, t.shape)
+            sigma = _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t, t.shape)
+            snr = (alpha / sigma) ** 2
+
+            k = float(self.mse_loss_weight_type.split('min_snr_')[-1])
+            # min{snr, k}
+            mse_loss_weight = th.stack([snr, k * th.ones_like(t)], dim=1).min(dim=1)[0] / snr
+        else:
+            raise ValueError(self.mse_loss_weight_type)
+
+        if self.loss_type == LossType.KL or self.loss_type == LossType.RESCALED_KL:
+            out_dict = self._vb_terms_bpd(
+                model=model,
+                x_start=x_start,
+                x_t=x_t,
+                t=t,
+                clip_denoised=False,
+                model_kwargs=model_kwargs,
+            )
+            terms["loss"] = out_dict["output"]
+            if self.loss_type == LossType.RESCALED_KL:
+                terms["loss"] *= self.num_timesteps
+            extra = out_dict["extra"]
+        elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
+            if controlnet != None:
+                controls = controlnet(x_t, t, **model_kwargs)
+                model_kwargs.pop('condition')
+                model_kwargs.update(controls)
+            out_dict = model(x_t, t, **model_kwargs)
+            model_output = out_dict['x']
+            extra = {k: v for k, v in out_dict.items() if k != 'x'}
+
+            if self.model_var_type in [
+                ModelVarType.LEARNED,
+                ModelVarType.LEARNED_RANGE,
+            ]:
+                B, C = x_t.shape[:2]
+                assert_shape(model_output, (B, C, *x_t.shape[2:]))
+                model_output, model_var_values = th.split(model_output, C // 2, dim=1)
+                # Learn the variance using the variational bound, but don't let
+                # it affect our mean prediction.
+                frozen_out = th.cat([model_output.detach(), model_var_values], dim=1)
+                terms["vb"] = self._vb_terms_bpd(
+                    model=lambda *args, r=frozen_out: dict(x=r),
+                    x_start=x_start,
+                    x_t=x_t,
+                    t=t,
+                    clip_denoised=False,
+                )["output"]
+                if self.loss_type == LossType.RESCALED_MSE:
+                    # Divide by 1000 for equivalence with initial implementation.
+                    # Without a factor of 1/1000, the VB term hurts the MSE term.
+                    terms["vb"] *= self.num_timesteps / 1000.0
+
+            if self.model_mean_type == ModelMeanType.VELOCITY:
+                target = self._velocity_from_xstart_and_noise(x_start[:, :4, :, :], t, noise[:, :4, :, :])
+            else:
+                target = {
+                    # ModelMeanType.PREVIOUS_X: self.q_posterior_mean_variance(
+                    #     x_start=x_start, x_t=x_t, t=t
+                    # )[0],
+                    ModelMeanType.START_X: x_start,
+                    ModelMeanType.EPSILON: noise,
+                }[self.model_mean_type][:, :4, :, :]
+            assert_shape(model_output, target, x_start[:, :4, :, :])
+            raw_mse = mean_flat((target - model_output) ** 2).detach()
+            terms["mse"] = mse_loss_weight * mean_flat((target - model_output) ** 2)
+            if "vb" in terms:
+                terms["loss"] = terms["mse"] + terms["vb"]
+                terms["raw_loss"] = raw_mse + terms["vb"].detach()
+            else:
+                terms["loss"] = terms["mse"]
+                terms["raw_loss"] = raw_mse
+        else:
+            raise NotImplementedError(self.loss_type)
+
+        terms.update(extra)
+        return terms
+
+    def _vb_terms_bpd(
+        self, model, x_start, x_t, t, clip_denoised=True, model_kwargs=None
+    ):
+        """
+        Get a term for the variational lower-bound.
+
+        The resulting units are bits (rather than nats, as one might expect).
+        This allows for comparison to other papers.
+
+        :return: a dict with the following keys:
+                 - 'output': a shape [N] tensor of NLLs or KLs.
+                 - 'pred_xstart': the x_0 predictions.
+        """
+        true_mean, _, true_log_variance_clipped = self.q_posterior_mean_variance(
+            x_start=x_start[:,:4,:,:], x_t=x_t[:,:4,:,:], t=t
+        )
+        out = self.p_mean_variance(
+            model, x_t, t, clip_denoised=clip_denoised, model_kwargs=model_kwargs
+        )
+        kl = normal_kl(
+            true_mean, true_log_variance_clipped, out["mean"], out["log_variance"]
+        )
+        kl = mean_flat(kl) / np.log(2.0)
+
+        decoder_nll = -discretized_gaussian_log_likelihood(
+            x_start[:,:4,:,:], means=out["mean"], log_scales=0.5 * out["log_variance"]
+        )
+        assert_shape(decoder_nll, x_start[:,:4,:,:])
+        decoder_nll = mean_flat(decoder_nll) / np.log(2.0)
+
+        # At the first timestep return the decoder NLL,
+        # otherwise return KL(q(x_{t-1}|x_t,x_0) || p(x_{t-1}|x_t))
+        output = th.where((t == 0), decoder_nll, kl)
+        return {"output": output, "pred_xstart": out["pred_xstart"], "extra": out["extra"]}
+
+    def p_mean_variance(
+        self, model, x, t, clip_denoised=True, denoised_fn=None, model_kwargs=None,
+        model_var_type=None,
+    ):
+        """
+        Apply the model to get p(x_{t-1} | x_t), as well as a prediction of
+        the initial x, x_0.
+
+        :param model: the model, which takes a signal and a batch of timesteps
+                      as input.
+        :param x: the [N x C x ...] tensor at time t.
+        :param t: a 1-D Tensor of timesteps.
+        :param clip_denoised: if True, clip the denoised signal into [-1, 1].
+        :param denoised_fn: if not None, a function which applies to the
+            x_start prediction before it is used to sample. Applies before
+            clip_denoised.
+        :param model_kwargs: if not None, a dict of extra keyword arguments to
+            pass to the model. This can be used for conditioning.
+        :param model_var_type: if not None, overlap the default self.model_var_type.
+            It is useful when training with learned var but sampling with fixed var.
+        :return: a dict with the following keys:
+                 - 'mean': the model mean output.
+                 - 'variance': the model variance output.
+                 - 'log_variance': the log of 'variance'.
+                 - 'pred_xstart': the prediction for x_0.
+        """
+        if model_kwargs is None:
+            model_kwargs = {}
+
+        if model_var_type is None:
+            model_var_type = self.model_var_type
+
+        B, C = x.shape[:2]
+        assert_shape(t, (B,))
+        out_dict = model(x, t, **model_kwargs)
+        model_output = out_dict['x']
+
+        if len(out_dict) > 1:
+            extra = {k: v for k, v in out_dict.items() if k != 'x'}
+        else:
+            extra = None
+
+        # model_output: [B,8,H,W]
+        # x: [B,8,H,W]
+        # self.model_var_type corresponds to model output
+        if self.model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
+            assert_shape(model_output, (B, C, *x.shape[2:]))
+            model_output, model_var_values = th.split(model_output, C // 2, dim=1)
+
+        # model_output: [B,4,H,W]
+        # model_var_type corresponds to reverse diffusion process
+        if model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
+            if model_var_type == ModelVarType.LEARNED:
+                model_log_variance = model_var_values
+                model_variance = th.exp(model_log_variance)
+            else:
+                min_log = _extract_into_tensor(
+                    self.posterior_log_variance_clipped, t, x[:,:4,:,:].shape
+                )
+                max_log = _extract_into_tensor(np.log(self.betas), t, x[:,:4,:,:].shape)
+                # The model_var_values is [-1, 1] for [min_var, max_var].
+                frac = (model_var_values + 1) / 2
+                model_log_variance = frac * max_log + (1 - frac) * min_log
+                model_variance = th.exp(model_log_variance)
+        else:
+            model_variance, model_log_variance = {
+                # for fixedlarge, we set the initial (log-)variance like so
+                # to get a better decoder log likelihood.
+                ModelVarType.FIXED_LARGE: (
+                    np.append(self.posterior_variance[1], self.betas[1:]),
+                    np.log(np.append(self.posterior_variance[1], self.betas[1:])),
+                ),
+                ModelVarType.FIXED_SMALL: (
+                    self.posterior_variance,
+                    self.posterior_log_variance_clipped,
+                ),
+            }[model_var_type]
+            model_variance = _extract_into_tensor(model_variance, t, x[:,:4,:,:].shape)
+            model_log_variance = _extract_into_tensor(model_log_variance, t, x[:,:4,:,:].shape)
+
+        def process_xstart(x):
+            if denoised_fn is not None:
+                x = denoised_fn(x)
+            if clip_denoised:
+                return x.clamp(-1, 1)
+            return x
+
+        if self.model_mean_type == ModelMeanType.PREVIOUS_X:
+            pred_xstart = process_xstart(
+                self._predict_xstart_from_xprev(x_t=x[:,:4,:,:], t=t, xprev=model_output)
+            )
+            model_mean = model_output
+        elif self.model_mean_type in [
+                ModelMeanType.START_X,
+                ModelMeanType.EPSILON,
+                ModelMeanType.VELOCITY
+        ]:
+            if self.model_mean_type == ModelMeanType.START_X:
+                pred_xstart = process_xstart(model_output)
+            elif self.model_mean_type == ModelMeanType.EPSILON:
+                pred_xstart = process_xstart(
+                    self._predict_xstart_from_eps(x_t=x[:,:4,:,:], t=t, eps=model_output)
+                )
+            else:
+                pred_xstart = process_xstart(
+                    self._predict_xstart_from_v(x_t=x[:,:4,:,:], t=t, v=model_output)
+                )
+            model_mean, _, _ = self.q_posterior_mean_variance(
+                x_start=pred_xstart, x_t=x[:,:4,:,:], t=t
+            )
+        else:
+            raise NotImplementedError(self.model_mean_type)
+
+        assert_shape(model_mean, model_log_variance, pred_xstart, x[:,:4,:,:])
+        return {
+            "mean": model_mean,
+            "variance": model_variance,
+            "log_variance": model_log_variance,
+            "pred_xstart": pred_xstart,
+            "extra": extra,
+        }
 
 def _extract_into_tensor(arr, timesteps, broadcast_shape):
     """

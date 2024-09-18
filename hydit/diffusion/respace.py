@@ -1,7 +1,7 @@
 import numpy as np
 import torch as th
 
-from .gaussian_diffusion import GaussianDiffusion
+from .gaussian_diffusion import GaussianDiffusion, GaussianDiffusionForRelight
 
 
 def space_timesteps(num_timesteps, section_counts):
@@ -67,15 +67,19 @@ class SpacedDiffusion(GaussianDiffusion):
     :param kwargs: the kwargs to create the base diffusion process.
     """
 
-    def __init__(self, use_timesteps, **kwargs):
+    def __init__(self, use_timesteps, relight_mode, **kwargs):
         self.use_timesteps = set(use_timesteps)
         self.timestep_map = []
         self.original_num_steps = len(kwargs["betas"])
 
-        base_diffusion = GaussianDiffusion(**kwargs)  # pylint: disable=missing-kwoa
+        if relight_mode is None:
+            base_diffusion = GaussianDiffusion(**kwargs)  # pylint: disable=missing-kwoa
+        else:
+            base_diffusion = GaussianDiffusionForRelight(**kwargs)
+        self.base_diffusion = base_diffusion
         last_alpha_cumprod = 1.0
         new_betas = []
-        for i, alpha_cumprod in enumerate(base_diffusion.alphas_cumprod):
+        for i, alpha_cumprod in enumerate(self.base_diffusion.alphas_cumprod):
             if i in self.use_timesteps:
                 new_betas.append(1 - alpha_cumprod / last_alpha_cumprod)
                 last_alpha_cumprod = alpha_cumprod
@@ -86,15 +90,15 @@ class SpacedDiffusion(GaussianDiffusion):
     def p_mean_variance(
         self, model, *args, **kwargs
     ):  # pylint: disable=signature-differs
-        return super().p_mean_variance(self._wrap_model(model), *args, **kwargs)
+        return self.base_diffusion.p_mean_variance(self._wrap_model(model), *args, **kwargs)
 
     def training_losses(
         self, model, controlnet=None, *args, **kwargs
     ):  # pylint: disable=signature-differs
         if controlnet != None:
-            return super().training_losses(self._wrap_model(model), controlnet=self._wrap_model(controlnet), *args, **kwargs)
+            return self.base_diffusion.training_losses(self._wrap_model(model), controlnet=self._wrap_model(controlnet), *args, **kwargs)
         else:
-            return super().training_losses(self._wrap_model(model), *args, **kwargs)
+            return self.base_diffusion.training_losses(self._wrap_model(model), *args, **kwargs)
 
     def condition_mean(self, cond_fn, *args, **kwargs):
         return super().condition_mean(self._wrap_model(cond_fn), *args, **kwargs)

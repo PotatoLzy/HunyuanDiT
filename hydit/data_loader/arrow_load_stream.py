@@ -273,7 +273,7 @@ class RelightingArrowStream(TextImageArrowStream):
         # add foreground / background
         fg_pil_image, _ = self.get_image_with_hwxy(ind, image_key="fg")
 
-        if args.relight_type == "bg":
+        if self.args.relight_mode == "bg":
             bg_pil_image, _ = self.get_image_with_hwxy(ind, image_key="bg")
         
 
@@ -282,7 +282,7 @@ class RelightingArrowStream(TextImageArrowStream):
 
         text_t5, text_embedding_t5, text_embedding_mask_t5 = self.get_text_info_with_encoder_t5(description_t5)
         
-        if args.relight_type == "bg":
+        if self.args.relight_mode == "bg":
             return (
                 [original_pil_image, fg_pil_image, bg_pil_image], 
                 text_embedding.clone().detach(),

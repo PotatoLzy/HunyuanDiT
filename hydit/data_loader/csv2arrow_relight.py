@@ -11,6 +11,7 @@ from tqdm import tqdm
 import hashlib
 from PIL import Image
 import sys
+from functools import partial
 
 
 def parse_data(data, relight_mode=None):
