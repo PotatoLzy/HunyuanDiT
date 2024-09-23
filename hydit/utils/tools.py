@@ -102,7 +102,7 @@ def create_exp_folder(args, rank):
         logger.info(f"Experiment directory created at {experiment_dir}")
     else:
         logger = create_logger()
-        experiment_dir = ""
+        # experiment_dir = ""
 
     return experiment_dir, checkpoint_dir, logger
 

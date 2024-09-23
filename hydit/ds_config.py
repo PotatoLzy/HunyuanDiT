@@ -47,7 +47,9 @@ def deepspeed_config_from_args(args, global_batch_size):
         }
         if args.cpu_offloading == True:
             deepspeed_config["zero_optimization"]["offload_optimizer"] = {"device": "cpu", "pin_memory": True}
-            deepspeed_config["zero_optimization"]["offload_parameter"] = {"device": "cpu", "pin_memory": True}
+            # deepspeed_config["zero_optimization"]["offload_parameter"] = {"device": "cpu", "pin_memory": True}
+            deepspeed_config["offload_parameter"] = {"device": "cpu", "pin_memory": True}
+
             
     elif args.use_zero_stage == 3:
         deepspeed_config = {
@@ -130,7 +132,8 @@ def deepspeed_config_from_args(args, global_batch_size):
         }
         if args.cpu_offloading == True:
             deepspeed_config["zero_optimization"]["offload_optimizer"] = {"device": "cpu", "pin_memory": True}
-            deepspeed_config["zero_optimization"]["offload_parameter"] = {"device": "cpu", "pin_memory": True}
+            # deepspeed_config["zero_optimization"]["offload_parameter"] = {"device": "cpu", "pin_memory": True}
+            deepspeed_config["offload_parameter"] = {"device": "cpu", "pin_memory": True}
     
     else:
         raise ValueError

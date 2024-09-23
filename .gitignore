@@ -137,3 +137,7 @@ trt/activate.sh
 trt/deactivate.sh
 *.onnx
 ckpts/
+
+#
+/log_EXP
+/hydit/run_g_relight_test.sh

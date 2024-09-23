@@ -1,6 +1,6 @@
+import os
 import gc
 import json
-import os
 import random
 import sys
 import time
@@ -191,7 +191,7 @@ def main(args):
     batch_size = args.batch_size
     grad_accu_steps = args.grad_accu_steps
     global_batch_size = world_size * batch_size * grad_accu_steps
-
+    
     rank = dist.get_rank()
     device = rank % torch.cuda.device_count()
     seed = args.global_seed * world_size + rank
@@ -202,7 +202,7 @@ def main(args):
     torch.cuda.set_device(device)
     print(f"Starting rank={rank}, seed={seed}, world_size={world_size}.")
     deepspeed_config = deepspeed_config_from_args(args, global_batch_size)
-
+    
     # Setup an experiment folder
     experiment_dir, checkpoint_dir, logger = create_exp_folder(args, rank)
 
