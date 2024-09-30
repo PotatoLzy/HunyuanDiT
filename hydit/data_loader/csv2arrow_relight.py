@@ -137,4 +137,4 @@ if __name__ == '__main__':
     if relight_mode != 'fg' and relight_mode != 'bg':
         relight_mode = None
     pool = Pool(pool_num)
-    make_arrow(csv_root, output_arrow_data_path, relight_mode)
+    make_arrow(csv_root, output_arrow_data_path, relight_mode=relight_mode)

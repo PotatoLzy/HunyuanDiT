@@ -340,8 +340,8 @@ class GaussianDiffusion:
 
         # self.model_var_type corresponds to model output
         if self.model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
-            assert_shape(model_output, (B, C * 2, *x.shape[2:]))
-            model_output, model_var_values = th.split(model_output, C, dim=1)
+            assert_shape(model_output, (B, 8, *x.shape[2:]))
+            model_output, model_var_values = th.split(model_output, 4, dim=1)
 
         # model_var_type corresponds to reverse diffusion process
         if model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
@@ -1413,8 +1413,8 @@ class GaussianDiffusionForRelight(GaussianDiffusion):
                 ModelVarType.LEARNED_RANGE,
             ]:
                 B, C = x_t.shape[:2]
-                assert_shape(model_output, (B, C, *x_t.shape[2:]))
-                model_output, model_var_values = th.split(model_output, C // 2, dim=1)
+                assert_shape(model_output, (B, 8, *x_t.shape[2:]))
+                model_output, model_var_values = th.split(model_output, 4, dim=1)
                 # Learn the variance using the variational bound, but don't let
                 # it affect our mean prediction.
                 frozen_out = th.cat([model_output.detach(), model_var_values], dim=1)
@@ -1536,8 +1536,8 @@ class GaussianDiffusionForRelight(GaussianDiffusion):
         # x: [B,8,H,W]
         # self.model_var_type corresponds to model output
         if self.model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
-            assert_shape(model_output, (B, C, *x.shape[2:]))
-            model_output, model_var_values = th.split(model_output, C // 2, dim=1)
+            assert_shape(model_output, (B, 8, *x.shape[2:]))
+            model_output, model_var_values = th.split(model_output, 4, dim=1)
 
         # model_output: [B,4,H,W]
         # model_var_type corresponds to reverse diffusion process

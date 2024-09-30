@@ -5,4 +5,4 @@ params=" \
             --rope-img base512 \
             --rope-real \
             "
-deepspeed hydit/train_deepspeed_relight.py ${params}  "$@"
+deepspeed --include localhost:1 --master_port 25000 hydit/train_deepspeed_relight.py ${params}  "$@"

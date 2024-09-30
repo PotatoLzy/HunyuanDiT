@@ -399,7 +399,21 @@ def main(args):
                 new_embedder_proj = torch.nn.Conv2d(12, model.module.x_embedder.proj.out_channels, model.module.x_embedder.proj.kernel_size, model.module.x_embedder.proj.stride)
             else:
                 raise NotImplementedError("reilght_mode {} is not implemented.".format(args.relight_mode))
+            # he init
+            # different fan_out and nonlinearity may be different
+            # mode='fan_out'，根据输出神经元的数量（即当前层神经元的数量）来计算初始化参数
+            torch.nn.init.kaiming_uniform_(new_embedder_proj.weight, mode='fan_out', nonlinearity='relu')
+            # torch.nn.init.zeros_(new_embedder_proj.weight)
+            
             new_embedder_proj.weight[:, :4, :, :].copy_(model.module.x_embedder.proj.weight)
+            
+            # Load weight from hydit model
+            # if args.relight_mode == "fg":
+            #     new_embedder_proj.weight[:, 4:8, :, :].copy_(model.module.x_embedder.proj.weight)
+            # elif args.relight_mode == "bg":
+            #     new_embedder_proj.weight[:, 4:8, :, :].copy_(model.module.x_embedder.proj.weight)
+            #     new_embedder_proj.weight[:, 8:, :, :].copy_(model.module.x_embedder.proj.weight)
+
             new_embedder_proj.bias = model.module.x_embedder.proj.bias
             model.module.x_embedder.proj = new_embedder_proj
         else:
@@ -409,9 +423,18 @@ def main(args):
                 new_embedder_proj = torch.nn.Conv2d(12, model.x_embedder.proj.out_channels, model.x_embedder.proj.kernel_size, model.x_embedder.proj.stride)
             else:
                 raise NotImplementedError("reilght_mode {} is not implemented.".format(args.relight_mode))
+            torch.nn.init.kaiming_uniform_(new_embedder_proj.weight, mode='fan_out', nonlinearity='relu')
+            # torch.nn.init.zeros_(new_embedder_proj.weight)
             new_embedder_proj.weight[:, :4, :, :].copy_(model.x_embedder.proj.weight)
+            # Load weight from hydit model
+            # if args.relight_mode == "fg":
+            #     new_embedder_proj.weight[:, 4:8, :, :].copy_(model.x_embedder.proj.weight)
+            # elif args.relight_mode == "bg":
+            #     new_embedder_proj.weight[:, 4:8, :, :].copy_(model.x_embedder.proj.weight)
+            #     new_embedder_proj.weight[:, 8:, :, :].copy_(model.x_embedder.proj.weight)
+
             new_embedder_proj.bias = model.x_embedder.proj.bias
-            model.x_embedder.proj = new_embedder_proj
+            model.x_embedder.proj = new_embedder_proj 
     # modify end
     if args.training_parts == "lora":
         loraconfig = LoraConfig(
