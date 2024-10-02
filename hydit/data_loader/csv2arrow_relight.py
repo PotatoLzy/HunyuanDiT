@@ -69,11 +69,11 @@ def make_arrow(csv_root, dataset_root, start_id=0, end_id=-1, relight_mode=None)
     elif relight_mode == "fg":
         data = data[["image_path", "text_zh", "fg_path"]]
         columns_list = data.columns.tolist()
-        columns_list.extend("image", "fg_image")
+        columns_list.extend(["image", "fg_image"])
     elif relight_mode == "fg":
         data = data[["image_path", "text_zh", "fg_path", "bg_path"]]
         columns_list = data.columns.tolist()
-        columns_list.extend("image", "fg_image", "bg_image")
+        columns_list.extend(["image", "fg_image", "bg_image"])
     # modify end
 
     
