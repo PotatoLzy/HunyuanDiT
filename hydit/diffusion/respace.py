@@ -72,10 +72,11 @@ class SpacedDiffusion(GaussianDiffusion):
         self.timestep_map = []
         self.original_num_steps = len(kwargs["betas"])
 
-        if relight_mode is None:
-            base_diffusion = GaussianDiffusion(**kwargs)  # pylint: disable=missing-kwoa
-        else:
-            base_diffusion = GaussianDiffusionForRelight(**kwargs)
+        base_diffusion = GaussianDiffusion(**kwargs)  # pylint: disable=missing-kwoa
+        # if relight_mode is None:
+        #     base_diffusion = GaussianDiffusion(**kwargs)  # pylint: disable=missing-kwoa
+        # else:
+        #     base_diffusion = GaussianDiffusionForRelight(**kwargs)
         self.base_diffusion = base_diffusion
         last_alpha_cumprod = 1.0
         new_betas = []

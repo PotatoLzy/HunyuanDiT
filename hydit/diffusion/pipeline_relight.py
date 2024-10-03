@@ -690,9 +690,12 @@ class StableDiffusionRelightPipeline(DiffusionPipeline, TextualInversionLoaderMi
         input_bg = image[1] 
 
         latent_fg = self.vae.encode(input_fg).latent_dist.sample(generator).mul_(self.vae.config.scaling_factor).half()
-        latent_bg = self.vae.encode(input_bg).latent_dist.sample(generator).mul_(self.vae.config.scaling_factor).half()
-        
-        latents = torch.cat([latent_bg, latent_fg], dim=1)
+
+        if input_bg is not None:
+            latent_bg = self.vae.encode(input_bg).latent_dist.sample(generator).mul_(self.vae.config.scaling_factor).half()
+            latents = torch.cat([latent_bg, latent_fg], dim=1)
+        else:
+            latents = torch.cat([torch.zeros_like(latent_fg), latent_fg], dim=1)
         # 6. Prepare latent variables
         # @MODIFY: require fg/bg latents
 

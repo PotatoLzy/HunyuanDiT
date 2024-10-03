@@ -119,7 +119,8 @@ if __name__ == "__main__":
     # new_sample = torch.cat([input_bg, input_fg], dim=1)
     input_fg = input_fg.unsqueeze(0).to(device).half()
     input_bg = input_bg.unsqueeze(0).to(device).half()
-
+    input_bg = None
+    
     results = gen.predict(args.prompt,
                           height=height,
                           width=width,

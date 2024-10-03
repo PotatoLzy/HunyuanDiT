@@ -1,7 +1,7 @@
-task_flag="ditv1.2_full_1024p_relight_he_init_fanout_relu"                         # the task flag is used to identify folders.
+task_flag="ditv1.2_full_1024p_relight_human+animal_zero_init_ver1003"                         # the task flag is used to identify folders.
 resume_module_root=/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.2/pytorch_model_module.pt # checkpoint root for model resume
 resume_ema_root=/home/zhaoyi/media/vllm_ckpt/HunyuanDiT-v1.2/pytorch_model_ema.pt        # checkpoint root for ema resume
-index_file="/home/zhaoyi/media/dataset/ffhq/1024relighted/ffhq_relight/jsons/ffhq_relighted.json"                                             # index file for dataloader
+index_file=/home/zhaoyi/media/dataset/hydit_relight_fg/jsons/hyrelight.json                                       # index file for dataloader
 results_dir=./log_EXP                                         # save root for results
 batch_size=1                                                  # training batch size
 image_size=1536                                               # training image resolution
@@ -11,7 +11,7 @@ lr=0.0001                                                     # learning rate
 ckpt_every=9999999                                            # create a ckpt every a few steps.
 ckpt_latest_every=9999999                                     # create a ckpt named `latest.pt` every a few steps.
 ckpt_every_n_epoch=2                                          # create a ckpt every a few epochs.
-epochs=8                                                      # total training epochs
+epochs=8                                                    # total training epochs
 relight_mode="fg"
 
 sh $(dirname "$0")/run_g_relight.sh \
